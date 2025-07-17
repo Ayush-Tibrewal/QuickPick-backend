@@ -59,8 +59,8 @@ app.post('/search/compare', async (req, res) => {
 
   try {
     const [blinkitData, zeptoData, swiggyData] = await Promise.all([
-      scrapeBlinkit(query, pincode),
-    //   fetchZeptoPrices(query, location),
+    //   scrapeBlinkit(query, pincode),
+      fetchZeptoPrices(query, location),
     //   swiggyScrape(query, location)
     ]);
 
