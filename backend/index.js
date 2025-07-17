@@ -38,6 +38,10 @@ async function fetchLocation(pincode) {
   }
 }
 
+app.get("/" (req,res) => {
+  res.send("Welcome to QuickPick API"); 
+});
+
 // Main comparison route
 app.post('/search/compare', async (req, res) => {
   const { query, pincode } = req.body;
