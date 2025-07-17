@@ -1,43 +1,33 @@
 const express = require('express');
 const cors = require('cors');
-const matchProducts = require('./utils/compareProducts');
-const scrapeBlinkit = require('./scrapers/blinkit'); 
-const fetchZeptoPrices = require('./scrapers/zepto');
-const swiggyScrape= require('./scrapers/instamart');
-const fetchLocation=require('./api')
+const serverless = require('serverless-http');
+const axios = require('axios');
+const dotenv = require('dotenv');
 
-const dotenv=require('dotenv');
-const axios= require('axios');
+const matchProducts = require('../backend/utils/compareProducts');
+const scrapeBlinkit = require('../backend/scrapers/blinkit'); 
+const fetchZeptoPrices = require('../backend/scrapers/zepto');
+const swiggyScrape = require('../backend/scrapers/instamart');
 
 dotenv.config();
-
-async function encodeToUTF8(query) {
-  return encodeURIComponent(query);
-}
-
-// async function fetchLocation(pincode){
-//   // 1. Encode the pincode for URL
-//   const encodedQuery = await encodeToUTF8(`"${pincode}"`);
-
-//   // 2. Log the API key (for debugging - remove in production)
-//   console.log("API Key:", process.env.API);
-//   console.log(process.env); 
-//   const res = await axios.get(`https://geocode.maps.co/search?q=${encodedQuery}&api_key=${process.env.API}`);
-
-//   // 4. Extract coordinates
-//   const latitude = Number(res.data[0]?.lat);
-//   const longitude = Number(res.data[0]?.lon);
-
-//   // 5. Return as object
-//   return { latitude, longitude };
-// }
-   
-
-module.exports=fetchLocation
 
 const app = express();
 app.use(cors());  
 app.use(express.json());
+
+// Inline fetchLocation function
+// async function fetchLocation(pincode) {
+//   const encodedQuery = encodeURIComponent(`"${pincode}"`);
+//   try {
+//     const res = await axios.get(`https://geocode.maps.co/search?q=${encodedQuery}&api_key=${process.env.API}`);
+//     const latitude = Number(res.data[0]?.lat);
+//     const longitude = Number(res.data[0]?.lon);
+//     return { latitude, longitude };
+//   } catch (err) {
+//     console.error("Location fetch error:", err.message);
+//     return {};
+//   }
+// }
 
 app.post("/", (req, res) => {
   res.send("POST request received. Backend is working!");
@@ -90,5 +80,5 @@ app.post('/search/compare', async (req, res) => {
   }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+module.exports = app;
+module.exports.handler = serverless(app);
