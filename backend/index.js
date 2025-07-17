@@ -38,7 +38,7 @@ async function fetchLocation(pincode) {
   }
 }
 
-app.get("/" (req,res) => {
+app.get("/" , (req,res) => {
   res.send("Welcome to QuickPick API"); 
 });
 
@@ -72,5 +72,5 @@ app.post('/search/compare', async (req, res) => {
   }
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
