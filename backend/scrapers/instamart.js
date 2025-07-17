@@ -7,7 +7,7 @@ async function swiggyScrape(query, location) {
   console.log('Launching browser...');
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--use-fake-ui-for-media-stream'],
     defaultViewport: { width: 1280, height: 800 }
   });

@@ -6,7 +6,7 @@ async function fetchZeptoPrices(query, pincode) {
   console.log("🟡 [Zepto] Start scrape for:", query, " @", pincode);
 
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
