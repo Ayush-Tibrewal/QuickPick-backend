@@ -10,6 +10,10 @@ const app = express();
 app.use(cors());  
 app.use(express.json());
 
+app.post("/", (req, res) => {
+  res.send("POST request received. Backend is working!");
+});
+
 app.post('/search/compare', async (req, res) => {
   const { query, pincode } = req.body;
 
