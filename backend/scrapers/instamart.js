@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer');
+require("dotenv").config();
+
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
@@ -7,6 +9,7 @@ async function swiggyScrape(query, location) {
   console.log('Launching browser...');
 
   const browser = await puppeteer.launch({
+    executablePath: process.env.NODE_ENV ==='production' ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--use-fake-ui-for-media-stream'],
     defaultViewport: { width: 1280, height: 800 }

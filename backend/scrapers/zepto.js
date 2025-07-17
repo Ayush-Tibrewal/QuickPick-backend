@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+require("dotenv").config();
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -6,6 +7,7 @@ async function fetchZeptoPrices(query, pincode) {
   console.log("🟡 [Zepto] Start scrape for:", query, " @", pincode);
 
   const browser = await puppeteer.launch({
+    executablePath: process.env.NODE_ENV ==='production' ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
     headless: true,
     args: [
       "--no-sandbox",

@@ -1,10 +1,13 @@
 const puppeteer = require('puppeteer');
+require("dotenv").config();
+
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
 async function scrapeBlinkit(query, pincode = '110078', maxProducts = 25) {
   console.log('Launching browser...');
   const browser = await puppeteer.launch({
+    executablePath: process.env.NODE_ENV ==='production' ? process.env.PUPPETEER_EXECUTABLE_PATH : puppeteer.executablePath(),
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     defaultViewport: { width: 1280, height: 800 }
