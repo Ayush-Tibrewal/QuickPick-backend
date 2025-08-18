@@ -67,45 +67,27 @@ async function fetchZeptoPrices(query, pincode) {
     console.log("⏳ Waiting for products to load...");
     await delay(3000)
 
-    const productHtmlList = await page.$$eval('[data-testid="product-card"]', cards =>
-  cards.map((card, index) => {
-    return {
-      index: index + 1,
-      innerHTML: card.innerHTML
-    };
-  })
-);
-
-console.log("Full HTML of each product card:");
-productHtmlList.forEach(product => {
-  console.log(`\n--- Product ${product.index} ---`);
-  console.log(product.innerHTML);
-});
-
-
-  const products = await page.$$eval('a[data-testid="product-card"]', cards =>
+  const products = await page.$$eval('a[href*="/pn/"]', cards =>
   cards.map(card => {
-    // 1. Name
-    const name = card
-      .querySelector('[data-testid="product-card-name"]')
-      ?.textContent
-      ?.trim();
+    // 1. Product name
+    const name = card.querySelector('div[data-slot-id="ProductName"] span')
+      ?.textContent.trim();
 
-    // 2. Price & MRP
-    const [price, mrp] = Array.from(
-      card.querySelectorAll('div.flex.flex-wrap.items-baseline p')
-    ).map(p => p.textContent.trim());
+    // 2. Price (selling) and MRP
+    const price = card.querySelector('div[data-slot-id="Price"] p._price_ljyvk_11')
+      ?.textContent.trim();
+    const mrp = card.querySelector('div[data-slot-id="Price"] p._original-price_ljyvk_35')
+      ?.textContent.trim();
 
     // 3. Image
-    const image = card
-      .querySelector('[data-testid="product-card-image"]')
-      ?.src;
+    const image = card.querySelector('img')?.src;
 
-    // 4. Link — card is the <a> itself
+    // 4. Product link (href from <a>)
     const link = card.href;
 
-    // 5. Out of stock flag (if it’s ever rendered inside)
-    const outOfStock = !!card.querySelector('[data-testid="OOS"]');
+
+    // 8. Out of stock flag
+    const outOfStock = card.querySelector('div[data-is-out-of-stock="true"]') !== null;
 
     return { name, price, mrp, image, link, outOfStock };
   })
