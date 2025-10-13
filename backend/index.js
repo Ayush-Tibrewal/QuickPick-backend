@@ -58,11 +58,11 @@ app.post('/search/compare', async (req, res) => {
 
   try {
     let swiggyData = [];
-    try {
-      swiggyData = await swiggyScrape(query, location);
-    } catch (err) {
-      console.warn('Swiggy scrape failed:', err.message);
-    }
+    // try {
+    //   swiggyData = await swiggyScrape(query, location);
+    // } catch (err) {
+    //   console.warn('Swiggy scrape failed:', err.message);
+    // }
 
     let zeptoData = [];
     try {
