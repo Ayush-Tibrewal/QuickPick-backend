@@ -31,9 +31,6 @@ async function fetchZeptoPrices(query, pincode) {
 //     Waits until the "Select Location" button is visible on the page.
 
 // This ensures the page is ready before clicking anything.
-
-
-
     console.log("➡️ Waiting for 'Select Location'...");
     await page.waitForSelector('button[aria-label="Select Location"]', { visible: true });
     await page.click('button[aria-label="Select Location"]');
@@ -67,42 +64,77 @@ async function fetchZeptoPrices(query, pincode) {
     console.log("⏳ Waiting for products to load...");
     await delay(3000)
 
-  const products = await page.$$eval('a[href*="/pn/"]', cards =>
-  cards.map(card => {
-    // 1. Product name
-    const name = card.querySelector('div[data-slot-id="ProductName"] span')
-      ?.textContent.trim();
+  // inside an async function with a Puppeteer `page`
+const products = await page.$$eval('.SxLQB a[href*="/pn/"]', cards =>
+  cards
+    .filter(card => {
+      // Only keep visible cards
+      const style = window.getComputedStyle(card);
+      const rect = card.getBoundingClientRect();
+      const isVisible =
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0' &&
+        rect.width > 0 &&
+        rect.height > 0;
+      return isVisible;
+    })
+    .map(card => {
+      const cleanPrice = (txt) => {
+        if (!txt) return null;
+        const cleaned = txt.replace(/[^\d.,]/g, '').replace(/,/g, '').trim();
+        return cleaned === '' ? null : cleaned;
+      };
 
-    // 2. Price (selling) and MRP
-    const price = card.querySelector('div[data-slot-id="Price"] p._price_ljyvk_11')
-      ?.textContent.trim();
-    const mrp = card.querySelector('div[data-slot-id="Price"] p._original-price_ljyvk_35')
-      ?.textContent.trim();
+      const name = card.querySelector('[data-slot-id="ProductName"] span')
+        ?.textContent?.trim() ?? null;
 
-    // 3. Image
-    const image = card.querySelector('img')?.src;
+      const priceSlot = card.querySelector('[data-slot-id="Price"]');
+      let price = null, mrp = null;
+      if (priceSlot) {
+        const sellingP = priceSlot.querySelector('p.cGFDG0, p')?.textContent?.trim() ?? null;
+        price = cleanPrice(sellingP);
 
-    // 4. Product link (href from <a>)
-    const link = card.href;
+        const mrpP = priceSlot.querySelector('p.cFLlze')?.textContent?.trim()
+          ?? (priceSlot.querySelectorAll('p').length > 1
+            ? priceSlot.querySelectorAll('p')[1]?.textContent?.trim()
+            : null);
+        mrp = cleanPrice(mrpP);
+      }
 
+      const image = card.querySelector('img.c2ahfT')?.src ?? null;
+      const link = card.getAttribute('href') ?? null;
 
-    // 8. Out of stock flag
-    const outOfStock = card.querySelector('div[data-is-out-of-stock="true"]') !== null;
+      const quantity = card.querySelector('[data-slot-id="PackSize"] span')
+        ?.textContent?.trim() ?? null;
 
-    return { name, price, mrp, image, link, outOfStock };
-  })
+      const deliveryTime = card.querySelector('[data-slot-id="EtaInformation"]')
+        ?.textContent?.trim() ?? null;
+
+      const rating = card.querySelector('[data-slot-id="RatingInformation"] .cPdMhy')
+        ?.textContent?.trim() ?? null;
+      const reviewCount = card.querySelector('[data-slot-id="RatingInformation"] .cuNaP7')
+        ?.textContent?.replace(/[()]/g, '')?.trim() ?? null;
+
+      let outOfStock = false;
+      const productDiv = card.querySelector('div[data-is-out-of-stock]');
+      if (productDiv) {
+        outOfStock = productDiv.getAttribute('data-is-out-of-stock') === 'true';
+      }
+
+      return { name, price, mrp, image, link, quantity, deliveryTime, rating, reviewCount, outOfStock };
+    })
 );
 
 
-console.log(products);
 
-
-    console.log(`✅ Extracted ${products.name} products from Zepto.`);
-    console.log(`✅ Extracted ${products.mrp} products from Zepto.`);
-    console.log(`✅ Extracted ${products.outOfStock} products from Zepto.`);
-    console.log(`✅ Extracted ${products.price} products from Zepto.`);
-    console.log(`✅ Extracted ${products.length} products from DOM.`);
-    return products;
+    console.log(products);
+    console.log(`✅ Extracted ${products.length} products from Zepto.`);
+    if (products.length) {
+      // show a quick sample to verify structure
+      console.log('Sample product:', products[0]);
+    }
+   return products;
 
   } catch (err) {
     console.error("❌ Zepto scrape error:", err.stack || err.message);

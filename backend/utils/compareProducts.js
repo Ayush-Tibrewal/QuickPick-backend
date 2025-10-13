@@ -1,4 +1,10 @@
-function normalize(text = '') {
+// safer normalize
+function normalize(text) {
+  // treat null/undefined/other non-string as empty string
+  if (text === null || text === undefined) text = '';
+  // if it's not a string (rare), coerce safely
+  if (typeof text !== 'string') text = String(text);
+
   return text
     .toLowerCase()
     .replace(/[^\x00-\x7F]/g, ' ')
@@ -12,8 +18,10 @@ function normalize(text = '') {
 }
 
 function tokenize(text) {
-  return new Set(normalize(text).split(' '));
+  // ensure normalize always gets a string (handles null/undefined)
+  return new Set(normalize(text ?? '').split(' ').filter(Boolean));
 }
+
 
 function scoreTokens(tokensA, tokensB) {
   const intersection = [...tokensA].filter(t => tokensB.has(t)).length;
@@ -34,14 +42,16 @@ function pickFields(obj, isSwiggy = false) {
 function matchOneToOneCustom(blinkit, targetList, isSwiggy = false) {
   const used = new Set();
   return blinkit.map(b => {
-    const bTokens = tokenize(b.name);
+    const bName = b?.name ?? '';              // <-- safe default
+    const bTokens = tokenize(bName);
     let bestScore = 0;
     let bestMatch = null;
     let bestIndex = -1;
 
     targetList.forEach((t, idx) => {
       if (used.has(idx)) return;
-      const tTokens = tokenize(t.name);
+      const tName = t?.name ?? '';           // <-- safe default
+      const tTokens = tokenize(tName);
       const score = scoreTokens(bTokens, tTokens);
       if (score > bestScore) {
         bestScore = score;
