@@ -31,9 +31,6 @@ async function fetchZeptoPrices(query, pincode) {
 //     Waits until the "Select Location" button is visible on the page.
 
 // This ensures the page is ready before clicking anything.
-
-
-
     console.log("➡️ Waiting for 'Select Location'...");
     await page.waitForSelector('button[aria-label="Select Location"]', { visible: true });
     await page.click('button[aria-label="Select Location"]');
@@ -67,60 +64,77 @@ async function fetchZeptoPrices(query, pincode) {
     console.log("⏳ Waiting for products to load...");
     await delay(3000)
 
-    const productHtmlList = await page.$$eval('[data-testid="product-card"]', cards =>
-  cards.map((card, index) => {
-    return {
-      index: index + 1,
-      innerHTML: card.innerHTML
-    };
-  })
+  // inside an async function with a Puppeteer `page`
+const products = await page.$$eval('.SxLQB a[href*="/pn/"]', cards =>
+  cards
+    .filter(card => {
+      // Only keep visible cards
+      const style = window.getComputedStyle(card);
+      const rect = card.getBoundingClientRect();
+      const isVisible =
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0' &&
+        rect.width > 0 &&
+        rect.height > 0;
+      return isVisible;
+    })
+    .map(card => {
+      const cleanPrice = (txt) => {
+        if (!txt) return null;
+        const cleaned = txt.replace(/[^\d.,]/g, '').replace(/,/g, '').trim();
+        return cleaned === '' ? null : cleaned;
+      };
+
+      const name = card.querySelector('[data-slot-id="ProductName"] span')
+        ?.textContent?.trim() ?? null;
+
+      const priceSlot = card.querySelector('[data-slot-id="Price"]');
+      let price = null, mrp = null;
+      if (priceSlot) {
+        const sellingP = priceSlot.querySelector('p.cGFDG0, p')?.textContent?.trim() ?? null;
+        price = cleanPrice(sellingP);
+
+        const mrpP = priceSlot.querySelector('p.cFLlze')?.textContent?.trim()
+          ?? (priceSlot.querySelectorAll('p').length > 1
+            ? priceSlot.querySelectorAll('p')[1]?.textContent?.trim()
+            : null);
+        mrp = cleanPrice(mrpP);
+      }
+
+      const image = card.querySelector('img.c2ahfT')?.src ?? null;
+      const link = card.getAttribute('href') ?? null;
+
+      const quantity = card.querySelector('[data-slot-id="PackSize"] span')
+        ?.textContent?.trim() ?? null;
+
+      const deliveryTime = card.querySelector('[data-slot-id="EtaInformation"]')
+        ?.textContent?.trim() ?? null;
+
+      const rating = card.querySelector('[data-slot-id="RatingInformation"] .cPdMhy')
+        ?.textContent?.trim() ?? null;
+      const reviewCount = card.querySelector('[data-slot-id="RatingInformation"] .cuNaP7')
+        ?.textContent?.replace(/[()]/g, '')?.trim() ?? null;
+
+      let outOfStock = false;
+      const productDiv = card.querySelector('div[data-is-out-of-stock]');
+      if (productDiv) {
+        outOfStock = productDiv.getAttribute('data-is-out-of-stock') === 'true';
+      }
+
+      return { name, price, mrp, image, link, quantity, deliveryTime, rating, reviewCount, outOfStock };
+    })
 );
 
-console.log("Full HTML of each product card:");
-productHtmlList.forEach(product => {
-  console.log(`\n--- Product ${product.index} ---`);
-  console.log(product.innerHTML);
-});
 
 
-  const products = await page.$$eval('a[data-testid="product-card"]', cards =>
-  cards.map(card => {
-    // 1. Name
-    const name = card
-      .querySelector('[data-testid="product-card-name"]')
-      ?.textContent
-      ?.trim();
-
-    // 2. Price & MRP
-    const [price, mrp] = Array.from(
-      card.querySelectorAll('div.flex.flex-wrap.items-baseline p')
-    ).map(p => p.textContent.trim());
-
-    // 3. Image
-    const image = card
-      .querySelector('[data-testid="product-card-image"]')
-      ?.src;
-
-    // 4. Link — card is the <a> itself
-    const link = card.href;
-
-    // 5. Out of stock flag (if it’s ever rendered inside)
-    const outOfStock = !!card.querySelector('[data-testid="OOS"]');
-
-    return { name, price, mrp, image, link, outOfStock };
-  })
-);
-
-
-console.log(products);
-
-
-    console.log(`✅ Extracted ${products.name} products from Zepto.`);
-    console.log(`✅ Extracted ${products.mrp} products from Zepto.`);
-    console.log(`✅ Extracted ${products.outOfStock} products from Zepto.`);
-    console.log(`✅ Extracted ${products.price} products from Zepto.`);
-    console.log(`✅ Extracted ${products.length} products from DOM.`);
-    return products;
+    console.log(products);
+    console.log(`✅ Extracted ${products.length} products from Zepto.`);
+    if (products.length) {
+      // show a quick sample to verify structure
+      console.log('Sample product:', products[0]);
+    }
+   return products;
 
   } catch (err) {
     console.error("❌ Zepto scrape error:", err.stack || err.message);

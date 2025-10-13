@@ -108,50 +108,49 @@ await delay(500);
 
   console.log('Extracting product data...');
   const products = await page.$$eval('[data-testid="default_container_ux4"]', items => {
-    function generateSwiggySearchURL(productName) {
-      const encodedQuery = encodeURIComponent(productName).replace(/%20/g, '+');
-      return `https://www.swiggy.com/instamart/search?custom_back=true&query=${encodedQuery}`;
-    }
+  function generateSwiggySearchURL(productName) {
+    const encodedQuery = encodeURIComponent(productName).replace(/%20/g, '+');
+    return `https://www.swiggy.com/instamart/search?custom_back=true&query=${encodedQuery}`;
+  }
 
-    return items.map((item, index) => {
-      const name = item.querySelector('.novMV')?.innerText.trim() || '';
+  return items.map((item, index) => {
+    const name = item.querySelector('.novMV')?.innerText.trim() || '';
 
-      // Extract image from background-image style
-      let productImg = null;
+    // ✅ Extract product image
+    let productImg = null;
+    const imgTag = item.querySelector('img'); // real product image
+    if (imgTag?.src && imgTag.src.includes('media-assets.swiggy.com')) {
+      productImg = imgTag.src;
+    } else {
+      // fallback to background-image
       const bgStyle = item.querySelector('._7Vorb')?.style.backgroundImage;
       const bgUrl = bgStyle?.match(/url\("?(.*?)"?\)/)?.[1] || '';
-      if (bgUrl && !bgUrl.includes('offer_tag.png')) {
+      if (bgUrl && !bgUrl.includes('Offer%20Tag.png')) {
         productImg = bgUrl;
-      } else {
-        productImg = Array.from(item.querySelectorAll('img'))
-          .map(img => img.src)
-          .find(src =>
-            src.includes('media-assets.swiggy.com') &&
-            !src.includes('instamart-assets/offer_tag.png')
-          ) || null;
       }
+    }
 
-      const quantity = item.querySelector('.FqnWn')?.innerText.trim() || '';
-      const deliveryLabel = item.querySelector('[aria-label^="Delivery in"]')?.getAttribute('aria-label') || '';
-      const deliveryTime = deliveryLabel.match(/\d+/)?.[0] || '';
-      const price = item.querySelector('[data-testid="item-offer-price"]')?.innerText.trim() || '';
-      const link = generateSwiggySearchURL(name);
-      const isSoldOut = !!item.querySelector('[data-testid="sold-out"]');
-      const availability = isSoldOut ? 'Sold Out' : 'Available';
+    const quantity = item.querySelector('.FqnWn')?.innerText.trim() || '';
+    const deliveryLabel = item.querySelector('[aria-label^="Delivery in"]')?.getAttribute('aria-label') || '';
+    const deliveryTime = deliveryLabel.match(/\d+/)?.[0] || '';
+    const price = item.querySelector('[data-testid="item-offer-price"]')?.innerText.trim() || '';
+    const link = generateSwiggySearchURL(name);
+    const isSoldOut = !!item.querySelector('[data-testid="sold-out"]');
+    const availability = isSoldOut ? 'Sold Out' : 'Available';
 
-      return {
-        debugLog: `==== ITEM ${index + 1} ====`,
-        outerHTML: item.outerHTML,
-        name,
-        image:productImg,
-        quantity,
-        deliveryTime,
-        price,
-        link,
-        availability
-      };
-    });
+    return {
+      debugLog: `==== ITEM ${index + 1} ====`,
+      outerHTML: item.outerHTML,
+      name,
+      image: productImg,   // ✅ Corrected
+      quantity,
+      deliveryTime,
+      price,
+      link,
+      availability
+    };
   });
+});
 
   // ✅ Log results outside of page context
   products.forEach(p => {
